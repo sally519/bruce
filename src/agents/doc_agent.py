@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 # 系统提示词
 DOC_AGENT_SYSTEM_PROMPT = """你是一个资深产品经理，负责根据提供的需求文档内容生成专业的 PRD（产品需求文档）。
 
@@ -44,7 +43,6 @@ PRD 文档应包含以下章节：
 
 如果没有任何问题，PRD 末尾添加：
 【无需要用户补充的内容】"""
-
 
 # 检测提示词
 DETECTION_PROMPT = """你是一个需求分析专家。请分析以下 PRD 草稿，检测是否存在逻辑不完整或逻辑冲突的问题。
@@ -92,8 +90,6 @@ async def doc_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # 拼接原始文件内容
     content_texts = []
-    for fc in file_contents:
-        content_texts.append(f"【原始文件：{fc['name']} ({fc['type']})】\n{fc['content']}")
 
     # 添加用户补充的内容
     if user_input:
@@ -102,6 +98,9 @@ async def doc_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
     if user_input_files:
         for fc in user_input_files:
             content_texts.append(f"【用户补充文件：{fc['name']} ({fc['type']})】\n{fc['content']}")
+
+    for fc in file_contents:
+        content_texts.append(f"【原始文件：{fc['name']} ({fc['type']})】\n{fc['content']}")
 
     combined_content = "\n\n".join(content_texts)
 
@@ -178,7 +177,7 @@ async def detect_user_input_needed(prd_content: str, original_content: str) -> T
                     questions[-1] += " " + q
 
         if questions:
-            prompt = "请补充以下缺失或冲突的内容：\n" + "\n".join(f"{i+1}. {q}" for i, q in enumerate(questions))
+            prompt = "请补充以下缺失或冲突的内容：\n" + "\n".join(f"{i + 1}. {q}" for i, q in enumerate(questions))
             return True, prompt
 
     # 使用模型检测是否需要用户介入

@@ -65,8 +65,8 @@ def create_doc_subgraph() -> StateGraph:
         }
     )
 
-    # 用户输入后回到生成 PRD
-    graph.add_edge(DocNodeName.REQUEST_USER_INPUT, DocNodeName.GENERATE_PRD)
+    # 用户输入后直接进入 review_prd（不再回到 generate_prd）
+    graph.add_edge(DocNodeName.REQUEST_USER_INPUT, DocNodeName.REVIEW_PRD)
 
     # 审核分支
     graph.add_conditional_edges(
@@ -131,17 +131,33 @@ async def check_user_input_node(state: DocSubGraphState) -> Dict[str, Any]:
     """检测是否需要用户介入节点
 
     DocAgent 已经完成了检测，在这里只需要决定下一步
+    限制：用户最多补充一次，补充过后不再请求
     """
     needs_user_input = state.get("needs_user_input", False)
+    user_input_requested = state.get("user_input_requested", False)
+
+    # 如果已经请求过用户输入，不再请求
+    if user_input_requested:
+        return {
+            "_continue": False,
+        }
 
     return {
-        "_continue": needs_user_input,  # 标记是否需要继续用户介入流程
+        "_continue": needs_user_input,
     }
 
 
 def user_input_decision(state: DocSubGraphState) -> Literal["needs_input", "no_input"]:
-    """用户介入决策路由"""
+    """用户介入决策路由
+
+    最多只允许用户补充一次，补充过后直接进入 review_prd
+    """
     needs_user_input = state.get("needs_user_input", False)
+    user_input_requested = state.get("user_input_requested", False)
+
+    # 如果已经请求过用户输入，直接进入 review_prd
+    if user_input_requested:
+        return "no_input"
 
     if needs_user_input:
         return "needs_input"
@@ -159,20 +175,20 @@ async def request_user_input_node(state: DocSubGraphState) -> Dict[str, Any]:
     current_count = state.get("input_request_count", 0)
 
     # 使用 interrupt 暂停，等待用户在 Studio 上输入
-    # 用户输入的值会作为 user_input 返回
+    # Studio 上用户输入的值会直接作为返回值（字符串）
     user_response = interrupt({
         "prompt": user_input_prompt,
-        "message": "需要用户补充内容，请在下方输入补充内容或上传文件路径"
+        "message": "需要用户补充内容，请在下方输入补充内容"
     })
 
-    # 从 interrupt 返回的值中获取用户输入
-    user_input_text = user_response.get("user_input", "") if isinstance(user_response, dict) else str(user_response)
+    # 用户输入直接是字符串
+    user_input_text = str(user_response) if user_response else ""
 
     return {
         "user_input_prompt": user_input_prompt,
         "input_request_count": current_count + 1,
         "user_input": user_input_text,
-        "user_input_files": user_response.get("user_input_files", []) if isinstance(user_response, dict) else [],
+        "user_input_requested": True,  # 标记已请求过用户输入，下次不再请求
     }
 
 
@@ -187,13 +203,18 @@ async def output_prd_node(state: DocSubGraphState) -> Dict[str, Any]:
     output_dir = Path("D:/pyProject/bruce_project_flow/doc/result")
 
     output_path = str(output_dir / "PRD_最终版.md")
-    final_prd = state.get("final_prd", "")
+
+    # 优先使用 final_prd，如果为空则使用 prd_draft
+    final_prd = state.get("final_prd") or state.get("prd_draft", "")
+
+    if not final_prd:
+        print(f"[ERROR] output_prd: final_prd is empty! state keys: {state.keys()}")
 
     # 使用 asyncio.to_thread 处理阻塞的文件操作
-    async def write_file():
+    def write_file():
         output_dir.mkdir(exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write(final_prd)
+            f.write(final_prd or "# PRD生成失败，内容为空")
 
     await asyncio.to_thread(write_file)
 

@@ -36,6 +36,7 @@ class DocSubGraphState(TypedDict, total=False):
     user_input: Optional[str]               # 用户补充的内容
     user_input_files: Optional[List[Dict[str, Any]]]  # 用户补充的文件内容
     input_request_count: int               # 请求用户输入的次数
+    user_input_requested: bool            # 是否已经请求过用户输入（限制最多一次）
 
     # 审核信息
     review_status: ReviewStatus             # 审核状态
