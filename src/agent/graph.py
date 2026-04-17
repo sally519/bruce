@@ -21,14 +21,14 @@ from langgraph.runtime import Runtime
 from langgraph.checkpoint.memory import MemorySaver
 
 from agent.state import WorkflowState, WorkflowContext
-from agent.nodes.prd import DocNode
-from agent.nodes.delta import KnowledgeNode, DiffNode, ImpactNode, ContextNode
-from agent.nodes.arch import ArchNode
-from agent.nodes.dev import WebNode, H5Node, MobileNode, APINode
-from agent.nodes.qa import QANode, FixNode
-from agent.nodes.test import TestNode, TestRunnerNode, DebugNode
-from agent.nodes.deploy import DeployNode, CheckNode
-from agent.nodes.archive import StoreNode
+from nodes.prd import DocNode
+from nodes.delta import KnowledgeNode, DiffNode, ImpactNode, ContextNode
+from nodes.arch import ArchNode
+from nodes.dev import WebNode, H5Node, MobileNode, APINode
+from nodes.qa import QANode, FixNode
+from nodes.test import TestNode, TestRunnerNode, DebugNode
+from nodes.deploy import DeployNode, CheckNode
+from nodes.archive import StoreNode
 
 
 # 节点名称常量
