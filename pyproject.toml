@@ -1,9 +1,9 @@
 [project]
 name = "agent"
 version = "0.0.1"
-description = "Starter template for making a new agent LangGraph."
+description = "企业研发流程 AI 自动化系统"
 authors = [
-    { name = "William Fu-Hinthorn", email = "13333726+hinthornw@users.noreply.github.com" },
+    { name = "shaoqaing.zhang", email = "shaoqaing@example.com" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
@@ -11,6 +11,9 @@ requires-python = ">=3.10"
 dependencies = [
     "langgraph>=1.0.0",
     "python-dotenv>=1.0.1",
+    "langchain-openai>=0.0.5",
+    "pypdf>=4.0.0",
+    "python-docx>=1.0.0",
 ]
 
 
@@ -23,7 +26,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["agent", "nodes", "graphs", "state", "prompts", "tools", "models"]
+packages = ["agent", "nodes", "graphs", "state", "prompts", "tools", "models", "agents"]
 
 
 [tool.setuptools.package-data]

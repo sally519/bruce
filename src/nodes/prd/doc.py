@@ -1,69 +1,44 @@
-"""PRD 生成节点 (Doc-Agent)
+"""PRD 生成节点 (DocNode)
 
-自动根据需求生成产品需求文档（PRD）
+这是一个子图，包含：
+1. 文件扫描和内容提取
+2. DocAgent 生成 PRD 草稿
+3. ReviewAgent 审核 PRD
+4. 循环修改直到通过
 """
 
 from typing import Dict, Any
 from langgraph.runtime import Runtime
 
 from agent.state import WorkflowState, WorkflowContext
-from nodes.base import BaseNode
-
-
-class DocNode(BaseNode):
-    """PRD 生成节点
-
-    根据需求标题和描述，自动生成完整的 PRD 文档
-    """
-
-    async def call(self, state: WorkflowState, runtime: Runtime[WorkflowContext]) -> Dict[str, Any]:
-        """生成 PRD 文档"""
-        requirement_title = state.get("requirement_title", "")
-        requirement_id = state.get("requirement_id", "")
-
-        # TODO: 调用 LLM 生成 PRD
-        # 这里先返回占位内容
-        prd_content = f"""# PRD - {requirement_title}
-
-## 1. 背景与目标
-
-## 2. 功能需求
-
-## 3. 非功能需求
-
-## 4. 验收标准
-
-## 5. 排期计划
-"""
-
-        return {
-            "prd_content": prd_content,
-        }
+from graphs.subgraphs.doc_subgraph import doc_subgraph, DocNodeName
 
 
 class DocNode:
-    """PRD 生成节点静态方法封装"""
+    """PRD 生成节点
+
+    调用 PRD 生成子图处理需求文档
+    """
 
     @staticmethod
     async def call(state: WorkflowState, runtime: Runtime[WorkflowContext]) -> Dict[str, Any]:
-        """生成 PRD 文档"""
-        requirement_title = state.get("requirement_title", "")
-        requirement_id = state.get("requirement_id", "")
+        """执行 PRD 生成子图
 
-        # TODO: 调用 LLM 生成 PRD
-        prd_content = f"""# PRD - {requirement_title}
+        输入目录默认: D:/pyProject/bruce_project_flow/doc/requestion
+        输出目录: D:/pyProject/bruce_project_flow/doc/output
+        """
+        # 默认输入目录
+        input_directory = state.get("input_directory", "D:/pyProject/bruce_project_flow/doc/requestion")
 
-## 1. 背景与目标
-
-## 2. 功能需求
-
-## 3. 非功能需求
-
-## 4. 验收标准
-
-## 5. 排期计划
-"""
+        # 调用子图
+        result = await doc_subgraph.ainvoke({
+            "input_directory": input_directory,
+            "prd_version": 0,
+            "review_iterations": 0,
+        })
 
         return {
-            "prd_content": prd_content,
+            "prd_content": result.get("final_prd", ""),
+            "prd_review_result": "approved" if result.get("success") else "rejected",
+            "prd_review_feedback": result.get("review_comments", ""),
         }

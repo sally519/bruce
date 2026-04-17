@@ -18,7 +18,6 @@ from __future__ import annotations
 from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, END
 from langgraph.runtime import Runtime
-from langgraph.checkpoint.memory import MemorySaver
 
 from agent.state import WorkflowState, WorkflowContext
 from nodes.prd import DocNode
@@ -161,26 +160,11 @@ def create_workflow_graph() -> StateGraph:
         }
     )
 
-    # 多端并行开发
-    # 使用 Send to parallel 执行多个节点
-    graph.add_conditional_edges(
-        NodeName.ARCH_REVIEW,
-        parallel_dev_router,
-        {
-            "web": NodeName.WEB,
-            "h5": NodeName.H5,
-            "mobile": NodeName.MOBILE,
-            "api": NodeName.API,
-        },
-        NodeName.DEV_REVIEW,
-    )
+    # 多端开发 - 架构审核后直接开始开发评审（简化版）
+    # TODO: 后续使用 Send API 实现真正的并行开发
+    graph.add_edge(NodeName.ARCH_REVIEW, NodeName.DEV_REVIEW)
 
     # 开发评审
-    graph.add_edge(NodeName.WEB, NodeName.DEV_REVIEW)
-    graph.add_edge(NodeName.H5, NodeName.DEV_REVIEW)
-    graph.add_edge(NodeName.MOBILE, NodeName.DEV_REVIEW)
-    graph.add_edge(NodeName.API, NodeName.DEV_REVIEW)
-
     graph.add_conditional_edges(
         NodeName.DEV_REVIEW,
         dev_review_router,
@@ -322,8 +306,6 @@ async def human_review_node(state: WorkflowState, runtime: Runtime[WorkflowConte
 
 
 # === 创建并编译图 ===
-checkpointer = MemorySaver()
 graph = create_workflow_graph().compile(
     name="enterprise_dev_workflow",
-    checkpointer=checkpointer,
 )
